@@ -3,7 +3,6 @@
 from decimal import Decimal
 from http import HTTPStatus
 
-import argparse
 import base64
 import copy
 import datetime
@@ -18,7 +17,7 @@ import platformdirs
 import requests
 import singer
 
-import tap_outbrain.schemas as schemas
+from tap_outbrain.streams import STREAMS
 
 logger = singer.get_logger()
 
@@ -31,6 +30,7 @@ DEFAULT_STATE = {
 
 DEFAULT_START_DATE = '2016-08-01'
 ACCESS_TOKEN_EXPIRE_AFTER_DAYS = 30
+REQUIRED_CONFIG_KEYS = ["username", "password", "start_date"]
 
 
 def giveup(error):
@@ -368,37 +368,24 @@ def sync_links(state, access_token, account_id, campaign_id):
     logger.info('Done syncing links for campaign {}.'.format(campaign_id))
 
 
-def do_sync(args):
+def discover():
+    catalog = {"streams": STREAMS}
+    return singer.Catalog.from_dict(catalog)
+
+def do_sync(config, catalog: singer.Catalog):
     global DEFAULT_START_DATE
     state = DEFAULT_STATE
 
-    with open(args.config) as config_file:
-        config = json.load(config_file)
-    missing_keys = []
-    if 'username' not in config:
-        missing_keys.append('username')
-    else:
-        username = config['username']
+    username = config['username']
+    password = config['password']
 
-    if 'password' not in config:
-        missing_keys.append('password')
-    else:
-        password = config['password']
+    try:
+        account_ids = config.get("account_ids") or [config["account_id"]]
+    except KeyError:
+        raise Exception("Config is missing one of required keys: {}".format(["account_ids", "account_id"]))
 
-    if 'account_ids' not in config and 'account_id' not in config:
-        missing_keys.append('account_ids')
-    else:
-        account_ids = config.get('account_ids') or [config['account_id']]
-
-    if 'start_date' not in config:
-        missing_keys.append('start_date')
-    else:
-        # only want the date
-        DEFAULT_START_DATE = config['start_date'][:10]
-
-    if len(missing_keys) > 0:
-        logger.fatal("Missing {}.".format(", ".join(missing_keys)))
-        raise RuntimeError
+    # only want the date
+    DEFAULT_START_DATE = config['start_date'][:10]
 
     access_token = config.get('access_token')
 
@@ -410,34 +397,30 @@ def do_sync(args):
         raise RuntimeError
 
 
-    singer.write_schema('campaigns',
-                        schemas.campaign,
-                        key_properties=["id"])
-    singer.write_schema('campaign_performance',
-                        schemas.campaign_performance,
-                        key_properties=["campaignId", "fromDate"])
-    singer.write_schema('links',
-                        schemas.link,
-                        key_properties=["id"])
-    singer.write_schema('link_performance',
-                        schemas.link_performance,
-                        key_properties=["campaignId", "linkId", "fromDate"])
+    for stream in catalog.streams:
+        singer.write_schema(stream.tap_stream_id, stream.schema.to_dict(), stream.key_properties)
 
     for account_id in account_ids:
         sync_campaigns(state, access_token, account_id)
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    args = singer.utils.parse_args([])
 
-    parser.add_argument(
-        '-c', '--config', help='Config file', required=True)
-    parser.add_argument(
-        '-s', '--state', help='State file')
+    if not args.discover:
+        singer.utils.check_config(args.config, REQUIRED_CONFIG_KEYS)
 
-    args = parser.parse_args()
 
-    do_sync(args)
+    if not args.catalog or args.discover:
+        catalog = discover()
+
+        if args.discover:
+            print(json.dumps(catalog.to_dict(), indent=2))
+            return
+    else:
+        catalog = args.catalog
+
+    do_sync(args.config, catalog)
 
 
 if __name__ == '__main__':
