@@ -25,17 +25,13 @@ SCHEMAS_DIR = resources.files(__package__) / "schemas"
 class OutbrainStream(RESTStream):
     """Outbrain stream class."""
 
+    url_base = "https://api.outbrain.com/amplify/v0.1"
+
     # Update this value if necessary or override `parse_response`.
     records_jsonpath = "$[*]"
 
     # Update this value if necessary or override `get_new_paginator`.
     next_page_token_jsonpath = "$.next_page"  # noqa: S105
-
-    @property
-    def url_base(self) -> str:
-        """Return the API URL root, configurable via tap settings."""
-        # TODO: hardcode a value here, or retrieve it from self.config
-        return "https://api.mysample.com"
 
     @cached_property
     def authenticator(self) -> Auth:
