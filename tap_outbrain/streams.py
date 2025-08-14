@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from singer_sdk import typing as th  # JSON Schema typing helpers
+from singer_sdk.pagination import BaseOffsetPaginator
+from typing_extensions import override
 
 from tap_outbrain.client import OutbrainStream
 
@@ -65,3 +69,148 @@ class MarketerStream(OutbrainStream):
         th.Property("permissions", th.ArrayType(th.StringType)),
         th.Property("campaignDefaults", th.ObjectType(additional_properties=True)),
     ).to_dict()
+
+    @override
+    def get_child_context(self, record, context):
+        return {"marketerId": record["id"]}
+
+
+class CampaignStream(OutbrainStream):
+    """Define campaign stream."""
+
+    _check_sorted = True
+    _page_size = 50
+
+    parent_stream_type = MarketerStream
+    name = "campaigns"
+    path = "/marketers/{marketerId}/campaigns"
+    records_jsonpath = "$.campaigns[*]"
+    primary_keys = ("id",)
+    replication_key = "lastModified"
+    is_sorted = True
+
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("internalId", th.IntegerType),
+        th.Property("name", th.StringType),
+        th.Property("enabled", th.BooleanType),
+        th.Property("creationTime", th.DateTimeType),
+        th.Property("lastModified", th.DateTimeType),
+        th.Property("cpc", th.NumberType),
+        th.Property("autoArchived", th.BooleanType),
+        th.Property("minimumCpc", th.NumberType),
+        th.Property("currency", th.StringType),
+        th.Property(
+            "targeting",
+            th.ObjectType(
+                th.Property("platform", th.ArrayType(th.StringType)),
+                th.Property("language", th.StringType),
+                th.Property("excludeAdBlockUsers", th.BooleanType),
+                th.Property(
+                    "nativePlacements",
+                    th.ObjectType(
+                        th.Property("enabled", th.BooleanType),
+                    ),
+                ),
+                th.Property("includeCellularNetwork", th.BooleanType),
+                th.Property("nativePlacementsEnabled", th.BooleanType),
+                th.Property("locationsVersion", th.StringType),
+            ),
+        ),
+        th.Property("marketerId", th.StringType),
+        th.Property("autoExpirationOfAds", th.IntegerType),
+        th.Property("contentType", th.StringType),
+        th.Property(
+            "budget",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+                th.Property("name", th.StringType),
+                th.Property("shared", th.BooleanType),
+                th.Property("amount", th.NumberType),
+                th.Property("currency", th.StringType),
+                th.Property("creationTime", th.DateTimeType),
+                th.Property("lastModified", th.DateTimeType),
+                th.Property("startDate", th.DateType),
+                th.Property("endDate", th.DateType),
+                th.Property("runForever", th.BooleanType),
+                th.Property("type", th.StringType),
+                th.Property("pacing", th.StringType),
+                th.Property("dailyTarget", th.NumberType),
+            ),
+        ),
+        th.Property("suffixTrackingCode", th.StringType),
+        th.Property(
+            "prefixTrackingCode",
+            th.ObjectType(
+                th.Property("prefix", th.URIType),
+                th.Property("encode", th.BooleanType),
+            ),
+        ),
+        th.Property(
+            "liveStatus",
+            th.ObjectType(
+                th.Property("onAirReason", th.StringType),
+                th.Property("campaignOnAir", th.BooleanType),
+                th.Property("amountSpent", th.NumberType),
+                th.Property("onAirModificationTime", th.DateTimeType),
+            ),
+        ),
+        th.Property("readonly", th.BooleanType),
+        th.Property("startHour", th.StringType),
+        th.Property("onAirType", th.StringType),
+        th.Property("objective", th.StringType),
+        th.Property("creativeFormat", th.StringType),
+        th.Property("dynamicRetargeting", th.BooleanType),
+        th.Property("adReviewLevel", th.StringType),
+        th.Property(
+            "landingPageDetails",
+            th.ObjectType(
+                th.Property("url", th.URIType),
+                th.Property("category", th.IntegerType),
+            ),
+        ),
+        th.Property("isTamCampaign", th.BooleanType),
+    ).to_dict()
+
+    @override
+    def get_new_paginator(self):
+        return BaseOffsetPaginator(0, self._page_size)
+
+    @override
+    def get_url_params(self, context, next_page_token):
+        params = super().get_url_params(context, next_page_token)
+        params["includeArchived"] = True
+        params["limit"] = self._page_size
+        params["offset"] = next_page_token
+        params["sort"] = f"+{self.replication_key}"
+
+        if starting_last_modified := self.get_starting_timestamp(context):
+            delta = datetime.now(tz=timezone.utc) - starting_last_modified
+
+            # API returns data that was last modified up to n+1 days ago
+            # (non-inclusively) e.g. a delta of 0 days will return data up to
+            # 1 day/24 hours since it wastrue last modified
+            params["daysToLookBackForChanges"] = delta.days
+
+        return params
+
+    @override
+    @property
+    def check_sorted(self):
+        return self._check_sorted
+
+    @override
+    def post_process(self, row, context=None):
+        row = super().post_process(row, context)
+
+        starting_last_modified = self.get_starting_timestamp(context)
+        last_modified = datetime.fromisoformat(row[self.replication_key]).replace(
+            tzinfo=timezone.utc
+        )
+
+        # start checking if records are sorted after starting last modified value to
+        # account for day-only granularity of daysToLookBackForChanges URL parameter
+        if starting_last_modified:
+            self._check_sorted = last_modified >= starting_last_modified
+
+        return row
