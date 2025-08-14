@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from singer_sdk import Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
+from typing_extensions import override
 
-# TODO: Import your custom stream types here:
 from tap_outbrain import streams
 
+STREAM_TYPES = [
+    streams.MarketerStream,
+]
 
 class TapOutbrain(Tap):
     """Outbrain tap class."""
@@ -38,16 +41,9 @@ class TapOutbrain(Tap):
         ),
     ).to_dict()
 
-    def discover_streams(self) -> list[streams.OutbrainStream]:
-        """Return a list of discovered streams.
-
-        Returns:
-            A list of discovered streams.
-        """
-        return [
-            streams.GroupsStream(self),
-            streams.UsersStream(self),
-        ]
+    @override
+    def discover_streams(self):
+        return [stream_cls(tap=self) for stream_cls in STREAM_TYPES]
 
 
 if __name__ == "__main__":
