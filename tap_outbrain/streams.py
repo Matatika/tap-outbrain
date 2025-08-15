@@ -64,10 +64,24 @@ class MarketerStream(OutbrainStream):
             ),
         ),
         th.Property("useFirstPartyCookie", th.BooleanType),
+        th.Property(
+            "account",
+            th.ObjectType(
+                th.Property("type", th.StringType),
+                th.Property("salesForceAccountId", th.StringType),
+            ),
+        ),
         th.Property("role", th.StringType),
         th.Property("permissions", th.ArrayType(th.StringType)),
         th.Property("campaignDefaults", th.ObjectType(additional_properties=True)),
     ).to_dict()
+
+    @override
+    def get_url_params(self, context, next_page_token):
+        params = super().get_url_params(context, next_page_token)
+        params["extraFields"] = "Account"
+
+        return params
 
     @override
     def get_child_context(self, record, context):
