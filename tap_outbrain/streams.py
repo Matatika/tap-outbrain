@@ -5,10 +5,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from singer_sdk import typing as th  # JSON Schema typing helpers
-from singer_sdk.pagination import BaseOffsetPaginator
 from typing_extensions import override
 
 from tap_outbrain.client import OutbrainStream
+from tap_outbrain.pagination import OutbrainPaginator
 
 
 class MarketerStream(OutbrainStream):
@@ -174,7 +174,7 @@ class CampaignStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return BaseOffsetPaginator(0, self._page_size)
+        return OutbrainPaginator(0, self._page_size)
 
     @override
     def get_url_params(self, context, next_page_token):
@@ -291,7 +291,7 @@ class PromotedLinkStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return BaseOffsetPaginator(0, self._page_size)
+        return OutbrainPaginator(0, self._page_size)
 
     @override
     def get_url_params(self, context, next_page_token):
