@@ -214,3 +214,32 @@ class CampaignStream(OutbrainStream):
             self._check_sorted = last_modified >= starting_last_modified
 
         return row
+
+
+class BudgetStream(OutbrainStream):
+    """Define budget stream."""
+
+    parent_stream_type = MarketerStream
+    name = "budgets"
+    path = "/marketers/{marketerId}/budgets"
+    records_jsonpath = "$.budgets[*]"
+    primary_keys = ("id",)
+    replication_key = "lastModified"
+
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("shared", th.BooleanType),
+        th.Property("amount", th.NumberType),
+        th.Property("currency", th.StringType),
+        th.Property("amountRemaining", th.NumberType),
+        th.Property("amountSpent", th.NumberType),
+        th.Property("creationTime", th.DateTimeType),
+        th.Property("lastModified", th.DateTimeType),
+        th.Property("startDate", th.DateType),
+        th.Property("endDate", th.DateType),
+        th.Property("runForever", th.BooleanType),
+        th.Property("type", th.StringType),
+        th.Property("pacing", th.StringType),
+        th.Property("dailyTarget", th.NumberType),
+    ).to_dict()

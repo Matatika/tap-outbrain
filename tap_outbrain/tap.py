@@ -11,6 +11,7 @@ from tap_outbrain import streams
 STREAM_TYPES = [
     streams.MarketerStream,
     streams.CampaignStream,
+    streams.BudgetStream,
 ]
 
 class TapOutbrain(Tap):
