@@ -12,6 +12,7 @@ STREAM_TYPES = [
     streams.MarketerStream,
     streams.CampaignStream,
     streams.BudgetStream,
+    streams.PromotedLinkStream,
 ]
 
 class TapOutbrain(Tap):

@@ -215,6 +215,94 @@ class CampaignStream(OutbrainStream):
 
         return row
 
+    @override
+    def get_child_context(self, record, context):
+        return {"campaignId": record["id"]}
+
+
+class PromotedLinkStream(OutbrainStream):
+    """Define promoted links stream."""
+
+    _page_size = 500
+
+    parent_stream_type = CampaignStream
+    name = "promoted_links"
+    path = "/campaigns/{campaignId}/promotedLinks"
+    records_jsonpath = "$.promotedLinks[*]"
+    primary_keys = ("id",)
+    replication_key = "lastModified"
+
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("internalId", th.NumberType),
+        th.Property("text", th.StringType),
+        th.Property("creationTime", th.DateTimeType),
+        th.Property("lastModified", th.DateTimeType),
+        th.Property("url", th.URIType),
+        th.Property("siteName", th.StringType),
+        th.Property("sectionName", th.StringType),
+        th.Property("status", th.StringType),
+        th.Property("enabled", th.BooleanType),
+        th.Property("campaignId", th.StringType),
+        th.Property("archived", th.BooleanType),
+        th.Property("documentLanguage", th.StringType),
+        th.Property(
+            "onAirStatus",
+            th.ObjectType(
+                th.Property("onAir", th.BooleanType),
+                th.Property("reason", th.StringType),
+            ),
+        ),
+        th.Property("baseUrl", th.URIType),
+        th.Property("documentId", th.StringType),
+        th.Property("metaData", th.StringType),
+        th.Property(
+            "approvalStatus",
+            th.ObjectType(
+                th.Property("status", th.StringType),
+                th.Property("reasons", th.ArrayType(th.StringType)),
+                th.Property("isEditable", th.BooleanType),
+                th.Property(
+                    "primaryElements",
+                    th.ArrayType(
+                        th.ObjectType(
+                            th.Property("element", th.StringType),
+                            th.Property("reasons", th.ArrayType(th.StringType)),
+                        )
+                    ),
+                ),
+            ),
+        ),
+        th.Property("cpcAdjustment", th.NumberType),
+        th.Property("description", th.StringType),
+        th.Property(
+            "callToAction",
+            th.ObjectType(
+                th.Property("type", th.StringType),
+                th.Property("value", th.StringType),
+            ),
+        ),
+        th.Property("imagePlayMode", th.StringType),
+        th.Property("imageType", th.StringType),
+        th.Property("language", th.StringType),
+        th.Property("creativeFormat", th.StringType),
+        th.Property("dynamicVisualsEnabled", th.StringType),
+    ).to_dict()
+
+    @override
+    def get_new_paginator(self):
+        return BaseOffsetPaginator(0, self._page_size)
+
+    @override
+    def get_url_params(self, context, next_page_token):
+        params = super().get_url_params(context, next_page_token)
+        params["includeArchived"] = True
+        params["limit"] = self._page_size
+        params["offset"] = next_page_token
+        params["sort"] = "+creationDate"
+
+        return params
+
 
 class BudgetStream(OutbrainStream):
     """Define budget stream."""
