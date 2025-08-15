@@ -18,7 +18,6 @@ class MarketerStream(OutbrainStream):
     path = "/marketers"
     records_jsonpath = "$.marketers[*]"
     primary_keys = ("id",)
-    replication_key = "lastModified"
 
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -230,7 +229,6 @@ class PromotedLinkStream(OutbrainStream):
     path = "/campaigns/{campaignId}/promotedLinks"
     records_jsonpath = "$.promotedLinks[*]"
     primary_keys = ("id",)
-    replication_key = "lastModified"
 
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -312,7 +310,6 @@ class BudgetStream(OutbrainStream):
     path = "/marketers/{marketerId}/budgets"
     records_jsonpath = "$.budgets[*]"
     primary_keys = ("id",)
-    replication_key = "lastModified"
 
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
