@@ -14,6 +14,7 @@ STREAM_TYPES = [
     streams.BudgetStream,
     streams.PromotedLinkStream,
     streams.PromotedLinkDailyPerformanceStream,
+    streams.SectionDailyPerformanceStream,
 ]
 
 class TapOutbrain(Tap):

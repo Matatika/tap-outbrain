@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from singer_sdk import typing as th  # JSON Schema typing helpers
+from singer_sdk.pagination import SinglePagePaginator
 from typing_extensions import override
 
 from tap_outbrain.client import OutbrainStream
@@ -407,6 +408,90 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
         row = super().post_process(row, context)
         row["date"] = row.pop("metadata")["id"]
         row.update(row.pop("metrics"))
+
+        return row
+
+class SectionDailyPerformanceStream(OutbrainStream):
+    """Define section daily performance stream."""
+
+    _page_size = 500
+
+    parent_stream_type = MarketerStream
+    name = "section_daily_performance"
+    path = "/reports/marketers/{marketerId}/sections/date"
+    records_jsonpath = "$.results[*]"
+    primary_keys = ("date", "id")
+    replication_key = "date"
+    is_timestamp_replication_key = True
+    is_sorted = True
+
+    schema = th.PropertiesList(
+        th.Property("date", th.DateType),
+        th.Property("id", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("identifier", th.StringType),
+        th.Property("publisherId", th.StringType),
+        th.Property("publisherName", th.StringType),
+        th.Property("publisherIdentifier", th.StringType),
+        th.Property("url", th.URIType),
+        th.Property("publisherUrl", th.URIType),
+        th.Property(
+            "metrics",
+            th.ObjectType(
+                th.Property("impressions", th.NumberType),
+                th.Property("clicks", th.NumberType),
+                th.Property("totalConversions", th.NumberType),
+                th.Property("conversions", th.NumberType),
+                th.Property("viewConversions", th.NumberType),
+                th.Property("spend", th.NumberType),
+                th.Property("ecpc", th.NumberType),
+                th.Property("ctr", th.NumberType),
+                th.Property("dstFeeCost", th.NumberType),
+                th.Property("conversionRate", th.NumberType),
+                th.Property("viewConversionRate", th.NumberType),
+                th.Property("cpa", th.NumberType),
+                th.Property("totalCpa", th.NumberType),
+                th.Property("totalSumValue", th.NumberType),
+                th.Property("sumValue", th.NumberType),
+                th.Property("viewSumValue", th.NumberType),
+                th.Property("totalAverageValue", th.NumberType),
+                th.Property("averageValue", th.NumberType),
+                th.Property("viewAverageValue", th.NumberType),
+                th.Property("totalRoas", th.NumberType),
+                th.Property("roas", th.NumberType),
+            ),
+        ),
+    ).to_dict()
+
+    @override
+    def get_new_paginator(self):
+        return SinglePagePaginator()
+
+    @override
+    def get_url_params(self, context, next_page_token):
+        params = super().get_url_params(context, next_page_token)
+        params["from"] = self.get_starting_timestamp(context).date()
+        params["to"] = datetime.now(tz=timezone.utc).date()
+        params["includeArchivedCampaigns"] = True
+        params["includeConversionDetails"] = True
+        params["limit"] = self._page_size
+        params["offset"] = next_page_token
+
+        return params
+
+    @override
+    def parse_response(self, response):
+        for record in super().parse_response(response):
+            for section in record.pop("sections"):
+                yield record | section
+
+    @override
+    def post_process(self, row, context=None):
+        row = super().post_process(row, context)
+        row.update(row.pop("metadata"))
+        row.update(row.pop("metrics"))
+
+        del row["totalResults"]
 
         return row
 
