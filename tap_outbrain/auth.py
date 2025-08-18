@@ -28,6 +28,10 @@ class OutbrainAuthenticator(OAuthAuthenticator, metaclass=SingletonMeta):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
+        # static access token expiry of 30 days
+        # https://amplifyv01.docs.apiary.io/#reference/authentications
+        self.expires_in = timedelta(days=ACCESS_TOKEN_EXPIRE_AFTER_DAYS).total_seconds()
+
         self.access_token_file = (
             Path(platformdirs.user_cache_dir(self.tap_name, ensure_exists=True))
             / "access_token"
@@ -43,9 +47,6 @@ class OutbrainAuthenticator(OAuthAuthenticator, metaclass=SingletonMeta):
             self.access_token_file.stat().st_mtime,
             tz=timezone.utc,
         )
-
-        delta = self.last_refreshed + timedelta(days=ACCESS_TOKEN_EXPIRE_AFTER_DAYS)
-        self.expires_in = (delta - datetime.now(tz=timezone.utc)).total_seconds()
 
         if not self.is_token_valid():
             self.logger.info(
@@ -82,11 +83,6 @@ class OutbrainAuthenticator(OAuthAuthenticator, metaclass=SingletonMeta):
             self.access_token_file.stat().st_mtime,
             tz=timezone.utc,
         )
-
-        self.expires_in = (
-            (self.last_refreshed + timedelta(days=ACCESS_TOKEN_EXPIRE_AFTER_DAYS))
-            - datetime.now(tz=timezone.utc)
-        ).seconds
 
     @override
     def authenticate_request(self, request):
