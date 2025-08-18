@@ -10,6 +10,7 @@ from importlib import resources
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 from singer_sdk.pagination import BaseAPIPaginator  # noqa: TC002
 from singer_sdk.streams import RESTStream
+from typing_extensions import override
 
 from tap_outbrain.auth import OutbrainAuthenticator
 
@@ -142,3 +143,15 @@ class OutbrainStream(RESTStream):
         """
         # TODO: Delete this method if not needed.
         return row
+
+    @override
+    def backoff_wait_generator(self):
+        def _backoff_from_headers(retriable_api_error: requests.HTTPError):
+            response_headers = retriable_api_error.response.headers
+            return int(response_headers["rate-limit-msec-left"]) / 1000
+
+        return self.backoff_runtime(value=_backoff_from_headers)
+
+    @override
+    def backoff_jitter(self, value):
+        return value  # no jitter
