@@ -10,8 +10,8 @@ class OutbrainPaginator(BaseOffsetPaginator):
     """Outbrain paginator."""
 
     @override
-    def __init__(self, start_value, page_size, total_key="totalCount") -> None:
-        super().__init__(start_value, page_size)
+    def __init__(self, page_size, total_key="totalCount") -> None:
+        super().__init__(0, page_size)
         self._total_key = total_key
 
     @override

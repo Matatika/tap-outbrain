@@ -187,7 +187,7 @@ class CampaignStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return OutbrainPaginator(0, self._page_size)
+        return OutbrainPaginator(self._page_size)
 
     @override
     def get_url_params(self, context, next_page_token):
@@ -303,7 +303,7 @@ class PromotedLinkStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return OutbrainPaginator(0, self._page_size)
+        return OutbrainPaginator(self._page_size)
 
     @override
     def get_url_params(self, context, next_page_token):
@@ -385,7 +385,7 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return OutbrainPaginator(0, self._page_size, total_key="totalResults")
+        return OutbrainPaginator(self._page_size, total_key="totalResults")
 
     @override
     def get_url_params(self, context, next_page_token):
