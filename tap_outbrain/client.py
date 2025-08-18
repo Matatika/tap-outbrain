@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import decimal
+import math
 import typing as t
 from functools import cached_property
 from importlib import resources
@@ -148,7 +149,8 @@ class OutbrainStream(RESTStream):
     def backoff_wait_generator(self):
         def _backoff_from_headers(retriable_api_error: requests.HTTPError):
             response_headers = retriable_api_error.response.headers
-            return int(response_headers["rate-limit-msec-left"]) / 1000
+            remaining_ms = response_headers["rate-limit-msec-left"]
+            return math.ceil(float(remaining_ms) / 1000)
 
         return self.backoff_runtime(value=_backoff_from_headers)
 
