@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import base64
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import requests
+from requests.auth import HTTPBasicAuth
 from singer_sdk.authenticators import OAuthAuthenticator, SingletonMeta
 from typing_extensions import override
 
@@ -59,8 +60,33 @@ class OutbrainAuthenticator(OAuthAuthenticator, metaclass=SingletonMeta):
 
     @override
     def update_access_token(self):
-        super().update_access_token()
+        token_response = requests.get(
+            self.auth_endpoint,
+            auth=HTTPBasicAuth(self.config["username"], self.config["password"]),
+            timeout=60,
+        )
+
+        try:
+            token_response.raise_for_status()
+        except requests.HTTPError as ex:
+            msg = f"Failed OAuth login, response was '{token_response.json()}'. {ex}"
+            raise RuntimeError(msg) from ex
+
+        self.logger.info("OAuth authorization attempt was successful.")
+
+        token_json = token_response.json()
+        self.access_token = token_json["OB-TOKEN-V1"]
         self.access_token_file.write_text(self.access_token)
+
+        self.last_refreshed = datetime.fromtimestamp(
+            self.access_token_file.stat().st_mtime,
+            tz=timezone.utc,
+        )
+
+        self.expires_in = (
+            (self.last_refreshed + timedelta(days=ACCESS_TOKEN_EXPIRE_AFTER_DAYS))
+            - datetime.now(tz=timezone.utc)
+        ).seconds
 
     @override
     def authenticate_request(self, request):
@@ -81,17 +107,7 @@ class OutbrainAuthenticator(OAuthAuthenticator, metaclass=SingletonMeta):
         Returns:
             A new authenticator.
         """
-        username_password = ":".join(
-            [
-                stream.config["username"],
-                stream.config["password"],
-            ]
-        )
-
         return cls(
             stream=stream,
             auth_endpoint=f"{stream.url_base}/login",
-            oauth_headers={
-                "Authorization": base64.b64encode(username_password.encode()),
-            },
         )
