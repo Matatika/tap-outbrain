@@ -201,8 +201,8 @@ class CampaignStream(OutbrainStream):
             delta = datetime.now(tz=timezone.utc) - starting_last_modified
 
             # API returns data that was last modified up to n+1 days ago
-            # (non-inclusively) e.g. a delta of 0 days will return data up to
-            # 1 day/24 hours since it wastrue last modified
+            # (non-inclusively) e.g. a delta of 0 days will return data that last
+            # modified up to 1 day/24 hours since
             params["daysToLookBackForChanges"] = delta.days
 
         return params
