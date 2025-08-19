@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from singer_sdk import Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 from typing_extensions import override
@@ -19,6 +21,8 @@ STREAM_TYPES = [
 
 class TapOutbrain(Tap):
     """Outbrain tap class."""
+
+    _start_date = datetime.now(tz=timezone.utc) - timedelta(days=365)
 
     name = "tap-outbrain"
 
@@ -43,6 +47,7 @@ class TapOutbrain(Tap):
             th.DateTimeType,
             title="Start Date",
             description="Initial date to start extracting data from",
+            default=_start_date.isoformat(),
         ),
     ).to_dict()
 
