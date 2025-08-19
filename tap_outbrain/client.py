@@ -13,7 +13,6 @@ from tap_outbrain.auth import OutbrainAuthenticator
 
 if t.TYPE_CHECKING:
     import requests
-    from singer_sdk.helpers.types import Auth
 
 
 class OutbrainStream(RESTStream):
@@ -21,13 +20,9 @@ class OutbrainStream(RESTStream):
 
     url_base = "https://api.outbrain.com/amplify/v0.1"
 
+    @override
     @cached_property
-    def authenticator(self) -> Auth:
-        """Return a new authenticator object.
-
-        Returns:
-            An authenticator instance.
-        """
+    def authenticator(self):
         return OutbrainAuthenticator.create_for_stream(self)
 
     @override
