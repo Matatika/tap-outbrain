@@ -330,12 +330,13 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
     name = "promoted_link_daily_performance"
     path = "/reports/marketers/{marketerId}/periodic"
     records_jsonpath = "$.results[*]"
-    primary_keys = ("date",)
+    primary_keys = ("promotedLinkId", "date")
     replication_key = "date"
     is_timestamp_replication_key = True
     is_sorted = True
 
     schema = th.PropertiesList(
+        th.Property("promotedLinkId", th.StringType),
         th.Property("date", th.DateType),
         th.Property("impressions", th.NumberType),
         th.Property("clicks", th.NumberType),
