@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
+import contextlib
 import math
-import typing as t
 from functools import cached_property
+from http import HTTPStatus
 
+from singer_sdk.exceptions import RetriableAPIError
 from singer_sdk.streams import RESTStream
 from typing_extensions import override
 
 from tap_outbrain.auth import OutbrainAuthenticator
-
-if t.TYPE_CHECKING:
-    import requests
 
 
 class OutbrainStream(RESTStream):
@@ -27,7 +26,10 @@ class OutbrainStream(RESTStream):
 
     @override
     def backoff_wait_generator(self):
-        def _backoff_from_headers(retriable_api_error: requests.HTTPError):
+        def _backoff_from_headers(retriable_api_error: RetriableAPIError):
+            if retriable_api_error.response.status_code != HTTPStatus.TOO_MANY_REQUESTS:
+                raise retriable_api_error
+
             response_headers = retriable_api_error.response.headers
             remaining_ms = response_headers["rate-limit-msec-left"]
             return math.ceil(float(remaining_ms) / 1000)
@@ -37,3 +39,20 @@ class OutbrainStream(RESTStream):
     @override
     def backoff_jitter(self, value):
         return value  # no jitter
+
+    @override
+    def backoff_runtime(self, *, value):
+        exception = yield
+
+        with contextlib.suppress(RetriableAPIError):
+            while True:
+                exception = yield value(exception)
+
+        # fallback to default backoff implementation
+        wait_gen = super().backoff_wait_generator()
+        jitter = super().backoff_jitter
+
+        next(wait_gen)  # skip first, always None
+
+        # apply jitter manually
+        yield from (jitter(value) for value in wait_gen)
