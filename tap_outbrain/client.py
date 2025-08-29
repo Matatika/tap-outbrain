@@ -37,6 +37,10 @@ class OutbrainStream(RESTStream):
         return self.backoff_runtime(value=_backoff_from_headers)
 
     @override
+    def backoff_max_tries(self):
+        return 8
+
+    @override
     def backoff_jitter(self, value):
         return value  # no jitter
 
