@@ -259,6 +259,7 @@ class PromotedLinkStream(OutbrainStream):
         th.Property("sectionName", th.StringType),
         th.Property("status", th.StringType),
         th.Property("enabled", th.BooleanType),
+        th.Property("cachedImageUrl", th.URIType),
         th.Property("campaignId", th.StringType),
         th.Property("archived", th.BooleanType),
         th.Property("documentLanguage", th.StringType),
@@ -301,6 +302,16 @@ class PromotedLinkStream(OutbrainStream):
         th.Property("imagePlayMode", th.StringType),
         th.Property("imageType", th.StringType),
         th.Property("language", th.StringType),
+        th.Property(
+            "imageMetadata",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+                th.Property("requestedImageUrl", th.URIType),
+                th.Property("originalImageUrl", th.URIType),
+                th.Property("type", th.StringType),
+                th.Property("cropType", th.StringType),
+            ),
+        ),
         th.Property("creativeFormat", th.StringType),
         th.Property("dynamicVisualsEnabled", th.StringType),
     ).to_dict()
@@ -316,6 +327,7 @@ class PromotedLinkStream(OutbrainStream):
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+creationDate"
+        params["extraFields"] = ["ImageURL", "ImageMetaData"]
 
         return params
 
