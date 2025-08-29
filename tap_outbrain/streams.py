@@ -9,7 +9,7 @@ from singer_sdk.pagination import SinglePagePaginator
 from typing_extensions import override
 
 from tap_outbrain.client import OutbrainStream
-from tap_outbrain.pagination import OutbrainPaginator
+from tap_outbrain.pagination import OutbrainPaginator, PeriodicContentPaginator
 
 
 class MarketerStream(OutbrainStream):
@@ -324,16 +324,15 @@ class PromotedLinkStream(OutbrainStream):
 class PromotedLinkDailyPerformanceStream(OutbrainStream):
     """Define promoted link daily performance stream."""
 
-    _page_size = 500
+    _page_size = 28  # up to 4 weeks
 
-    parent_stream_type = PromotedLinkStream
+    parent_stream_type = CampaignStream
     name = "promoted_link_daily_performance"
-    path = "/reports/marketers/{marketerId}/periodic"
-    records_jsonpath = "$.results[*]"
+    path = "/reports/marketers/{marketerId}/campaigns/{campaignId}/periodicContent"
+    records_jsonpath = "$.promotedLinkResults[*]"
     primary_keys = ("promotedLinkId", "date")
     replication_key = "date"
     is_timestamp_replication_key = True
-    is_sorted = True
 
     schema = th.PropertiesList(
         th.Property("promotedLinkId", th.StringType),
@@ -387,12 +386,11 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return OutbrainPaginator(self._page_size, total_key="totalResults")
+        return PeriodicContentPaginator(self._page_size)
 
     @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
-        params["promotedLinkId"] = context["promotedLinkId"]
         params["breakdown"] = "daily"
         params["from"] = self.get_starting_timestamp(context).date()
         params["to"] = datetime.now(tz=timezone.utc).date()
@@ -403,6 +401,12 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
         params["sort"] = "+fromDate"
 
         return params
+
+    @override
+    def parse_response(self, response):
+        for record in super().parse_response(response):
+            for result in record.pop("results"):
+                yield record | result
 
     @override
     def post_process(self, row, context=None):
