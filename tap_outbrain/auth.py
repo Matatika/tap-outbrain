@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -70,7 +71,16 @@ class OutbrainAuthenticator(OAuthAuthenticator, metaclass=SingletonMeta):
         try:
             token_response.raise_for_status()
         except requests.HTTPError as ex:
-            msg = f"Failed OAuth login, response was '{token_response.json()}'. {ex}"
+            msg = f"Failed OAuth login, response was '{token_response.json()}'"
+
+            if token_response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+                secs = int(token_response.headers["rate-limit-msec-left"]) / 1000
+                mins, r_secs = divmod(secs, 60)
+                hrs, r_mins = divmod(mins, 60)
+
+                msg += f" (remaining: {hrs:.0f}h {r_mins:.0f}m {r_secs:.0f}s)"
+
+            msg = f"{msg}. {ex}"
             raise RuntimeError(msg) from ex
 
         self.logger.info("OAuth authorization attempt was successful.")
