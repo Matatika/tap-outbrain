@@ -41,10 +41,6 @@ class OutbrainStream(RESTStream):
         return 8
 
     @override
-    def backoff_jitter(self, value):
-        return value  # no jitter
-
-    @override
     def backoff_runtime(self, *, value):
         exception = yield
 
@@ -54,9 +50,7 @@ class OutbrainStream(RESTStream):
 
         # fallback to default backoff implementation
         wait_gen = super().backoff_wait_generator()
-        jitter = super().backoff_jitter
 
         next(wait_gen)  # skip first, always None
 
-        # apply jitter manually
-        yield from (jitter(value) for value in wait_gen)
+        yield from wait_gen
