@@ -16,7 +16,7 @@ class OutbrainPaginator(BaseOffsetPaginator):
 
     @override
     def has_more(self, response):
-        next_offset = self.current_value + self._page_size
+        next_offset = self.get_next(response)
         total: int = response.json()[self._total_key]
 
         return next_offset < total
@@ -31,7 +31,7 @@ class PeriodicContentPaginator(BaseOffsetPaginator):
 
     @override
     def has_more(self, response):
-        next_offset = self.current_value + self._page_size
+        next_offset = self.get_next(response)
         total: int = response.json()["promotedLinkResults"][0]["totalResults"]
 
         return next_offset < total
