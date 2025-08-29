@@ -196,7 +196,7 @@ class CampaignStream(OutbrainStream):
         params["includeArchived"] = True
         params["limit"] = self._page_size
         params["offset"] = next_page_token
-        params["sort"] = f"+{self.replication_key}"
+        params["sort"] = "+lastModified"
 
         if starting_last_modified := self.get_starting_timestamp(context):
             delta = datetime.now(tz=timezone.utc) - starting_last_modified
@@ -218,13 +218,13 @@ class CampaignStream(OutbrainStream):
         row = super().post_process(row, context)
 
         starting_last_modified = self.get_starting_timestamp(context)
-        last_modified = datetime.fromisoformat(row[self.replication_key]).replace(
-            tzinfo=timezone.utc
-        )
 
         # start checking if records are sorted after starting last modified value to
         # account for day-only granularity of daysToLookBackForChanges URL parameter
         if starting_last_modified:
+            last_modified = datetime.fromisoformat(row["lastModified"]).replace(
+                tzinfo=timezone.utc
+            )
             self._check_sorted = last_modified >= starting_last_modified
 
         return row
@@ -244,6 +244,7 @@ class PromotedLinkStream(OutbrainStream):
     path = "/campaigns/{campaignId}/promotedLinks"
     records_jsonpath = "$.promotedLinks[*]"
     primary_keys = ("id",)
+    ignore_parent_replication_key = True
 
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -333,6 +334,7 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
     primary_keys = ("promotedLinkId", "date")
     replication_key = "date"
     is_timestamp_replication_key = True
+    ignore_parent_replication_key = True
 
     schema = th.PropertiesList(
         th.Property("promotedLinkId", th.StringType),
