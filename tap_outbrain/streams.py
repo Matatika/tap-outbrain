@@ -339,7 +339,7 @@ class PromotedLinkStream(OutbrainStream):
 class PromotedLinkDailyPerformanceStream(OutbrainStream):
     """Define promoted link daily performance stream."""
 
-    _page_size = 28  # up to 4 weeks
+    _page_size = 7  # up to a week
 
     parent_stream_type = CampaignStream
     name = "promoted_link_daily_performance"
