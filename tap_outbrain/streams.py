@@ -192,7 +192,7 @@ class CampaignStream(OutbrainStream):
     @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
-        params["includeArchived"] = True
+        params["includeArchived"] = self.include_archived
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+lastModified"
@@ -320,7 +320,7 @@ class PromotedLinkStream(OutbrainStream):
     @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
-        params["includeArchived"] = True
+        params["includeArchived"] = self.include_archived
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+creationDate"
@@ -410,7 +410,7 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
         params["breakdown"] = "daily"
         params["from"] = self.get_starting_timestamp(context).date()
         params["to"] = datetime.now(tz=timezone.utc).date()
-        params["includeArchivedCampaigns"] = True
+        params["includeArchivedCampaigns"] = self.include_archived
         params["includeConversionDetails"] = True
         params["limit"] = self._page_size
         params["offset"] = next_page_token
@@ -496,7 +496,7 @@ class SectionDailyPerformanceStream(OutbrainStream):
         params["campaignId"] = context["campaignId"]
         params["from"] = self.get_starting_timestamp(context).date()
         params["to"] = datetime.now(tz=timezone.utc).date()
-        params["includeArchivedCampaigns"] = True
+        params["includeArchivedCampaigns"] = self.include_archived
         params["includeConversionDetails"] = True
         params["limit"] = self._page_size
         params["offset"] = next_page_token

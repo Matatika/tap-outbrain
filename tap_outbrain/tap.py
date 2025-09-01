@@ -49,6 +49,13 @@ class TapOutbrain(Tap):
             description="Initial date to start extracting data from",
             default=_start_date.isoformat(),
         ),
+        th.Property(
+            "include_archived",
+            th.ArrayType(th.StringType),
+            title="Include archived",
+            description="Whether or not to extract archived data per stream",
+            default=[],
+        )
     ).to_dict()
 
     @override
