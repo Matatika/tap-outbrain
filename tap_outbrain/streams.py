@@ -191,12 +191,6 @@ class CampaignStream(OutbrainStream):
         return OutbrainPaginator(self._page_size)
 
     @override
-    def get_starting_timestamp(self, context):
-        return super().get_starting_timestamp(context) or datetime.fromisoformat(
-            self.config["start_date"]
-        ).replace(tzinfo=timezone.utc)
-
-    @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
         params["includeArchived"] = True
@@ -204,12 +198,13 @@ class CampaignStream(OutbrainStream):
         params["offset"] = next_page_token
         params["sort"] = "+lastModified"
 
-        delta = datetime.now(tz=timezone.utc) - self.get_starting_timestamp(context)
+        if starting_last_modified := self.get_starting_timestamp(context):
+            delta = datetime.now(tz=timezone.utc) - starting_last_modified
 
-        # API returns data that was last modified up to n+1 days ago
-        # (non-inclusively) e.g. a delta of 0 days will return data that last
-        # modified up to 1 day/24 hours since
-        params["daysToLookBackForChanges"] = delta.days
+            # API returns data that was last modified up to n+1 days ago
+            # (non-inclusively) e.g. a delta of 0 days will return data that last
+            # modified up to 1 day/24 hours since
+            params["daysToLookBackForChanges"] = delta.days
 
         return params
 
@@ -222,12 +217,15 @@ class CampaignStream(OutbrainStream):
     def post_process(self, row, context=None):
         row = super().post_process(row, context)
 
+        starting_last_modified = self.get_starting_timestamp(context)
+
         # start checking if records are sorted after starting last modified value to
         # account for day-only granularity of daysToLookBackForChanges URL parameter
-        last_modified = datetime.fromisoformat(row["lastModified"]).replace(
-            tzinfo=timezone.utc
-        )
-        self._check_sorted = last_modified >= self.get_starting_timestamp(context)
+        if starting_last_modified:
+            last_modified = datetime.fromisoformat(row["lastModified"]).replace(
+                tzinfo=timezone.utc
+            )
+            self._check_sorted = last_modified >= starting_last_modified
 
         return row
 
