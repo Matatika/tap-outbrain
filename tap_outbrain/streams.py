@@ -236,7 +236,7 @@ class CampaignStream(OutbrainStream):
 class PromotedLinkStream(OutbrainStream):
     """Define promoted links stream."""
 
-    _page_size = 500
+    _page_size = 100
 
     parent_stream_type = CampaignStream
     name = "promoted_links"
