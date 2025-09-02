@@ -482,6 +482,29 @@ class SectionDailyPerformanceStream(OutbrainStream):
                 th.Property("viewAverageValue", th.NumberType),
                 th.Property("totalRoas", th.NumberType),
                 th.Property("roas", th.NumberType),
+                th.Property(
+                    "conversionMetrics",
+                    th.ArrayType(
+                        th.ObjectType(
+                            th.Property("name", th.StringType),
+                            th.Property("totalConversions", th.NumberType),
+                            th.Property("conversions", th.NumberType),
+                            th.Property("viewConversions", th.NumberType),
+                            th.Property("conversionRate", th.StringType),
+                            th.Property("viewConversionRate", th.StringType),
+                            th.Property("totalCpa", th.StringType),
+                            th.Property("cpa", th.StringType),
+                            th.Property("totalSumValue", th.StringType),
+                            th.Property("sumValue", th.StringType),
+                            th.Property("viewSumValue", th.StringType),
+                            th.Property("totalAverageValue", th.StringType),
+                            th.Property("averageValue", th.StringType),
+                            th.Property("viewAverageValue", th.StringType),
+                            th.Property("totalRoas", th.StringType),
+                            th.Property("roas", th.StringType),
+                        )
+                    ),
+                ),
             ),
         ),
     ).to_dict()
