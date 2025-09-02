@@ -444,7 +444,6 @@ class SectionDailyPerformanceStream(OutbrainStream):
     primary_keys = ("campaignId", "date", "id")
     replication_key = "date"
     is_timestamp_replication_key = True
-    is_sorted = True
     ignore_parent_replication_key = True
 
     schema = th.PropertiesList(
