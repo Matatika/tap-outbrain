@@ -8,11 +8,7 @@ from singer_sdk import typing as th  # JSON Schema typing helpers
 from typing_extensions import override
 
 from tap_outbrain.client import OutbrainStream
-from tap_outbrain.pagination import (
-    OutbrainPaginator,
-    OutbrainResultsPaginator,
-    PeriodicContentPaginator,
-)
+from tap_outbrain.pagination import OutbrainPaginator, OutbrainResultsPaginator
 
 
 class MarketerStream(OutbrainStream):
@@ -403,7 +399,10 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return PeriodicContentPaginator(self._page_size)
+        return OutbrainResultsPaginator(
+            self._page_size,
+            results_key="promotedLinkResults",
+        )
 
     @override
     def get_url_params(self, context, next_page_token):
