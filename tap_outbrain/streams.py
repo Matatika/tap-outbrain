@@ -435,16 +435,18 @@ class SectionDailyPerformanceStream(OutbrainStream):
 
     _page_size = 500
 
-    parent_stream_type = MarketerStream
+    parent_stream_type = CampaignStream
     name = "section_daily_performance"
     path = "/reports/marketers/{marketerId}/sections/date"
     records_jsonpath = "$.results[*]"
-    primary_keys = ("date", "id")
+    primary_keys = ("campaignId", "date", "id")
     replication_key = "date"
     is_timestamp_replication_key = True
     is_sorted = True
+    ignore_parent_replication_key = True
 
     schema = th.PropertiesList(
+        th.Property("campaignId", th.StringType),
         th.Property("date", th.DateType),
         th.Property("id", th.StringType),
         th.Property("name", th.StringType),
@@ -489,6 +491,7 @@ class SectionDailyPerformanceStream(OutbrainStream):
     @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
+        params["campaignId"] = context["campaignId"]
         params["from"] = self.get_starting_timestamp(context).date()
         params["to"] = datetime.now(tz=timezone.utc).date()
         params["includeArchivedCampaigns"] = True
