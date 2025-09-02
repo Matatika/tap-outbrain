@@ -5,11 +5,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from singer_sdk import typing as th  # JSON Schema typing helpers
-from singer_sdk.pagination import SinglePagePaginator
 from typing_extensions import override
 
 from tap_outbrain.client import OutbrainStream
-from tap_outbrain.pagination import OutbrainPaginator, PeriodicContentPaginator
+from tap_outbrain.pagination import (
+    OutbrainPaginator,
+    OutbrainResultsPaginator,
+    PeriodicContentPaginator,
+)
 
 
 class MarketerStream(OutbrainStream):
@@ -486,7 +489,7 @@ class SectionDailyPerformanceStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return SinglePagePaginator()
+        return OutbrainResultsPaginator(self._page_size)
 
     @override
     def get_url_params(self, context, next_page_token):

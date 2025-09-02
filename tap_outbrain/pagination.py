@@ -22,6 +22,22 @@ class OutbrainPaginator(BaseOffsetPaginator):
         return next_offset < total
 
 
+class OutbrainResultsPaginator(BaseOffsetPaginator):
+    """Outbrain results paginator."""
+
+    @override
+    def __init__(self, page_size) -> None:
+        super().__init__(0, page_size)
+
+    @override
+    def has_more(self, response):
+        next_offset = self.get_next(response)
+        results: list[dict] = response.json()["results"]
+        total: int = max(r["totalResults"] for r in results) if results else 0
+
+        return next_offset < total
+
+
 class PeriodicContentPaginator(BaseOffsetPaginator):
     """Periodic content paginator."""
 
