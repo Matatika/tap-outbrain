@@ -5,11 +5,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from singer_sdk import typing as th  # JSON Schema typing helpers
-from singer_sdk.pagination import SinglePagePaginator
 from typing_extensions import override
 
 from tap_outbrain.client import OutbrainStream
-from tap_outbrain.pagination import OutbrainPaginator, PeriodicContentPaginator
+from tap_outbrain.pagination import OutbrainPaginator, OutbrainResultsPaginator
 
 
 class MarketerStream(OutbrainStream):
@@ -193,7 +192,7 @@ class CampaignStream(OutbrainStream):
     @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
-        params["includeArchived"] = True
+        params["includeArchived"] = self.include_archived
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+lastModified"
@@ -237,7 +236,7 @@ class CampaignStream(OutbrainStream):
 class PromotedLinkStream(OutbrainStream):
     """Define promoted links stream."""
 
-    _page_size = 500
+    _page_size = 100
 
     parent_stream_type = CampaignStream
     name = "promoted_links"
@@ -321,7 +320,7 @@ class PromotedLinkStream(OutbrainStream):
     @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
-        params["includeArchived"] = True
+        params["includeArchived"] = self.include_archived
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+creationDate"
@@ -400,7 +399,10 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
 
     @override
     def get_new_paginator(self):
-        return PeriodicContentPaginator(self._page_size)
+        return OutbrainResultsPaginator(
+            self._page_size,
+            results_key="promotedLinkResults",
+        )
 
     @override
     def get_url_params(self, context, next_page_token):
@@ -408,7 +410,7 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
         params["breakdown"] = "daily"
         params["from"] = self.get_starting_timestamp(context).date()
         params["to"] = datetime.now(tz=timezone.utc).date()
-        params["includeArchivedCampaigns"] = True
+        params["includeArchivedCampaigns"] = self.include_archived
         params["includeConversionDetails"] = True
         params["limit"] = self._page_size
         params["offset"] = next_page_token
@@ -430,21 +432,23 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
 
         return row
 
+
 class SectionDailyPerformanceStream(OutbrainStream):
     """Define section daily performance stream."""
 
     _page_size = 500
 
-    parent_stream_type = MarketerStream
+    parent_stream_type = CampaignStream
     name = "section_daily_performance"
     path = "/reports/marketers/{marketerId}/sections/date"
     records_jsonpath = "$.results[*]"
-    primary_keys = ("date", "id")
+    primary_keys = ("campaignId", "date", "id")
     replication_key = "date"
     is_timestamp_replication_key = True
-    is_sorted = True
+    ignore_parent_replication_key = True
 
     schema = th.PropertiesList(
+        th.Property("campaignId", th.StringType),
         th.Property("date", th.DateType),
         th.Property("id", th.StringType),
         th.Property("name", th.StringType),
@@ -478,20 +482,44 @@ class SectionDailyPerformanceStream(OutbrainStream):
                 th.Property("viewAverageValue", th.NumberType),
                 th.Property("totalRoas", th.NumberType),
                 th.Property("roas", th.NumberType),
+                th.Property(
+                    "conversionMetrics",
+                    th.ArrayType(
+                        th.ObjectType(
+                            th.Property("name", th.StringType),
+                            th.Property("totalConversions", th.NumberType),
+                            th.Property("conversions", th.NumberType),
+                            th.Property("viewConversions", th.NumberType),
+                            th.Property("conversionRate", th.StringType),
+                            th.Property("viewConversionRate", th.StringType),
+                            th.Property("totalCpa", th.StringType),
+                            th.Property("cpa", th.StringType),
+                            th.Property("totalSumValue", th.StringType),
+                            th.Property("sumValue", th.StringType),
+                            th.Property("viewSumValue", th.StringType),
+                            th.Property("totalAverageValue", th.StringType),
+                            th.Property("averageValue", th.StringType),
+                            th.Property("viewAverageValue", th.StringType),
+                            th.Property("totalRoas", th.StringType),
+                            th.Property("roas", th.StringType),
+                        )
+                    ),
+                ),
             ),
         ),
     ).to_dict()
 
     @override
     def get_new_paginator(self):
-        return SinglePagePaginator()
+        return OutbrainResultsPaginator(self._page_size)
 
     @override
     def get_url_params(self, context, next_page_token):
         params = super().get_url_params(context, next_page_token)
+        params["campaignId"] = context["campaignId"]
         params["from"] = self.get_starting_timestamp(context).date()
         params["to"] = datetime.now(tz=timezone.utc).date()
-        params["includeArchivedCampaigns"] = True
+        params["includeArchivedCampaigns"] = self.include_archived
         params["includeConversionDetails"] = True
         params["limit"] = self._page_size
         params["offset"] = next_page_token

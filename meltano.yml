@@ -34,6 +34,11 @@ plugins:
       label: Start Date
       description: Initial date to start extracting data from
 
+    - name: include_archived
+      kind: array
+      label: Include archived
+      description: Whether or not to extract archived data per stream
+
     settings_group_validation:
     - [username, password]
 
