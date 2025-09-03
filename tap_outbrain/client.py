@@ -54,3 +54,8 @@ class OutbrainStream(RESTStream):
         next(wait_gen)  # skip first, always None
 
         yield from wait_gen
+
+    @cached_property
+    def include_archived(self):
+        """Whether or not to include archived data."""
+        return self.name in self.config["include_archived"]
