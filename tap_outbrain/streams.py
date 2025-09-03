@@ -432,6 +432,7 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
 
         return row
 
+
 class SectionDailyPerformanceStream(OutbrainStream):
     """Define section daily performance stream."""
 
