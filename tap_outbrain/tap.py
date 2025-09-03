@@ -19,6 +19,7 @@ STREAM_TYPES = [
     streams.SectionDailyPerformanceStream,
 ]
 
+
 class TapOutbrain(Tap):
     """Outbrain tap class."""
 
@@ -55,7 +56,7 @@ class TapOutbrain(Tap):
             title="Include archived",
             description="Whether or not to extract archived data per stream",
             default=[],
-        )
+        ),
     ).to_dict()
 
     @override
