@@ -359,7 +359,6 @@ class PromotedLinkDailyPerformanceStream(OutbrainStream):
         th.Property("ecpc", th.NumberType),
         th.Property("ctr", th.NumberType),
         th.Property("dstFeeCost", th.NumberType),
-        th.Property("cpm", th.NumberType),
         th.Property("conversionRate", th.NumberType),
         th.Property("viewConversionRate", th.NumberType),
         th.Property("cpa", th.NumberType),
