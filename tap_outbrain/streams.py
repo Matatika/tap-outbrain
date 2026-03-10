@@ -244,6 +244,7 @@ class PromotedLinkStream(OutbrainStream):
     records_jsonpath = "$.promotedLinks[*]"
     primary_keys = ("id",)
     ignore_parent_replication_key = True
+    state_partitioning_keys = ()
 
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
