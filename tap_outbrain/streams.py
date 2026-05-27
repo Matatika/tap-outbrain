@@ -183,6 +183,7 @@ class CampaignStream(OutbrainStream):
             ),
         ),
         th.Property("isTamCampaign", th.BooleanType),
+        th.Property("campaignOptimization",th.ObjectType()),
     ).to_dict()
 
     @override
@@ -196,6 +197,7 @@ class CampaignStream(OutbrainStream):
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+lastModified"
+        params["extraFields"] = "CampaignOptimization"
 
         if starting_last_modified := self.get_starting_timestamp(context):
             delta = datetime.now(tz=timezone.utc) - starting_last_modified
