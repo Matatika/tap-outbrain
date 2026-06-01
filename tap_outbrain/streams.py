@@ -183,7 +183,24 @@ class CampaignStream(OutbrainStream):
             ),
         ),
         th.Property("isTamCampaign", th.BooleanType),
-        th.Property("campaignOptimization",th.ObjectType()),
+        th.Property(
+            "campaignOptimization",
+            th.ObjectType(
+                th.Property("optimizationType", th.StringType),
+                th.Property("maxCpcBidPercentage", th.NumberType),
+                th.Property("targetConversionId", th.StringType),
+                th.Property("conversions", th.ArrayType(th.StringType)),
+                th.Property("maxCpcAdjustmentOverManualInFullyAutomated",th.NumberType),
+                th.Property("targetCpaConversionId", th.StringType),
+                th.Property("targetRoasConversionId", th.StringType),
+                th.Property("targetCpa", th.NumberType),
+                th.Property("targetRoas", th.NumberType),
+                th.Property("baseCpc", th.NumberType),
+                th.Property("automaticModeMaxAvgDailyCpc", th.NumberType),
+                th.Property("automaticModeMaxCpc", th.NumberType),
+                th.Property("maxCpcRecommendation", th.StringType),
+            ),
+        ),
     ).to_dict()
 
     @override
