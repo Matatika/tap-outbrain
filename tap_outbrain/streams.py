@@ -190,7 +190,10 @@ class CampaignStream(OutbrainStream):
                 th.Property("maxCpcBidPercentage", th.NumberType),
                 th.Property("targetConversionId", th.StringType),
                 th.Property("conversions", th.ArrayType(th.StringType)),
-                th.Property("maxCpcAdjustmentOverManualInFullyAutomated",th.NumberType),
+                th.Property(
+                    "maxCpcAdjustmentOverManualInFullyAutomated",
+                    th.NumberType,
+                ),
                 th.Property("targetCpaConversionId", th.StringType),
                 th.Property("targetRoasConversionId", th.StringType),
                 th.Property("targetCpa", th.NumberType),
