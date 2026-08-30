@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import math
 from functools import cached_property
 from http import HTTPStatus
@@ -26,34 +25,29 @@ class OutbrainStream(RESTStream):
 
     @override
     def backoff_wait_generator(self):
-        def _backoff_from_headers(retriable_api_error: RetriableAPIError):
-            if retriable_api_error.response.status_code != HTTPStatus.TOO_MANY_REQUESTS:
-                raise retriable_api_error
+        # Default exponential backoff, used for any retriable error that isn't a
+        # rate limit (dropped connections, timeouts, 5xx, ...). Primed with a
+        # `send(None)` to mirror how `backoff` initialises a wait generator.
+        default_wait = super().backoff_wait_generator()
+        default_wait.send(None)
 
-            response_headers = retriable_api_error.response.headers
-            remaining_ms = response_headers["rate-limit-msec-left"]
-            return math.ceil(float(remaining_ms) / 1000)
+        exception = yield
 
-        return self.backoff_runtime(value=_backoff_from_headers)
+        while True:
+            if (
+                isinstance(exception, RetriableAPIError)
+                and exception.response.status_code == HTTPStatus.TOO_MANY_REQUESTS
+            ):
+                remaining_ms = exception.response.headers["rate-limit-msec-left"]
+                wait = math.ceil(float(remaining_ms) / 1000)
+            else:
+                wait = default_wait.send(exception)
+
+            exception = yield wait
 
     @override
     def backoff_max_tries(self):
         return 8
-
-    @override
-    def backoff_runtime(self, *, value):
-        exception = yield
-
-        with contextlib.suppress(RetriableAPIError):
-            while True:
-                exception = yield value(exception)
-
-        # fallback to default backoff implementation
-        wait_gen = super().backoff_wait_generator()
-
-        next(wait_gen)  # skip first, always None
-
-        yield from wait_gen
 
     @cached_property
     def include_archived(self):
