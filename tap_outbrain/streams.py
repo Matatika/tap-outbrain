@@ -185,11 +185,11 @@ class CampaignStream(OutbrainStream):
         th.Property("isTamCampaign", th.BooleanType),
         th.Property(
             "blockedSites",
-            th.ObjectType(
+            th.PropertiesList(
                 th.Property(
                     "blockedPublishers",
                     th.ArrayType(
-                        th.ObjectType(
+                        th.PropertiesList(
                             th.Property("id", th.StringType),
                             th.Property("name", th.StringType),
                             th.Property("creationTime", th.DateTimeType),
@@ -201,12 +201,12 @@ class CampaignStream(OutbrainStream):
                 th.Property(
                     "blockedSections",
                     th.ArrayType(
-                        th.ObjectType(
+                        th.PropertiesList(
                             th.Property("id", th.StringType),
                             th.Property("name", th.StringType),
                             th.Property(
                                 "publisher",
-                                th.ObjectType(
+                                th.PropertiesList(
                                     th.Property("id", th.StringType),
                                     th.Property("name", th.StringType),
                                 ),
