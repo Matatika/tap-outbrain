@@ -13,6 +13,7 @@ from tap_outbrain import streams
 STREAM_TYPES = [
     streams.MarketerStream,
     streams.CampaignStream,
+    streams.CampaignBlockedSectionsStream,
     streams.BudgetStream,
     streams.PromotedLinkStream,
     streams.PromotedLinkDailyPerformanceStream,
