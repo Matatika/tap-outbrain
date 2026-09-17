@@ -184,6 +184,42 @@ class CampaignStream(OutbrainStream):
         ),
         th.Property("isTamCampaign", th.BooleanType),
         th.Property(
+            "blockedSites",
+            th.PropertiesList(
+                th.Property(
+                    "blockedPublishers",
+                    th.ArrayType(
+                        th.PropertiesList(
+                            th.Property("id", th.StringType),
+                            th.Property("name", th.StringType),
+                            th.Property("creationTime", th.DateTimeType),
+                            th.Property("modifiedBy", th.StringType),
+                            th.Property("type", th.StringType),
+                        ),
+                    ),
+                ),
+                th.Property(
+                    "blockedSections",
+                    th.ArrayType(
+                        th.PropertiesList(
+                            th.Property("id", th.StringType),
+                            th.Property("name", th.StringType),
+                            th.Property(
+                                "publisher",
+                                th.PropertiesList(
+                                    th.Property("id", th.StringType),
+                                    th.Property("name", th.StringType),
+                                ),
+                            ),
+                            th.Property("creationTime", th.DateTimeType),
+                            th.Property("modifiedBy", th.StringType),
+                            th.Property("type", th.StringType),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        th.Property(
             "campaignOptimization",
             th.ObjectType(
                 th.Property("optimizationType", th.StringType),
@@ -217,7 +253,7 @@ class CampaignStream(OutbrainStream):
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+lastModified"
-        params["extraFields"] = "CampaignOptimization"
+        params["extraFields"] = ["CampaignOptimization", "BlockedSites"]
 
         if starting_last_modified := self.get_starting_timestamp(context):
             delta = datetime.now(tz=timezone.utc) - starting_last_modified
