@@ -184,6 +184,42 @@ class CampaignStream(OutbrainStream):
         ),
         th.Property("isTamCampaign", th.BooleanType),
         th.Property(
+            "blockedSites",
+            th.ObjectType(
+                th.Property(
+                    "blockedPublishers",
+                    th.ArrayType(
+                        th.ObjectType(
+                            th.Property("id", th.StringType),
+                            th.Property("name", th.StringType),
+                            th.Property("creationTime", th.DateTimeType),
+                            th.Property("modifiedBy", th.StringType),
+                            th.Property("expiration", th.DateTimeType),
+                        ),
+                    ),
+                ),
+                th.Property(
+                    "blockedSections",
+                    th.ArrayType(
+                        th.ObjectType(
+                            th.Property("id", th.StringType),
+                            th.Property("name", th.StringType),
+                            th.Property(
+                                "publisher",
+                                th.ObjectType(
+                                    th.Property("id", th.StringType),
+                                    th.Property("name", th.StringType),
+                                ),
+                            ),
+                            th.Property("creationTime", th.DateTimeType),
+                            th.Property("modifiedBy", th.StringType),
+                            th.Property("expiration", th.DateTimeType),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        th.Property(
             "campaignOptimization",
             th.ObjectType(
                 th.Property("optimizationType", th.StringType),
@@ -217,7 +253,7 @@ class CampaignStream(OutbrainStream):
         params["limit"] = self._page_size
         params["offset"] = next_page_token
         params["sort"] = "+lastModified"
-        params["extraFields"] = "CampaignOptimization"
+        params["extraFields"] = ["CampaignOptimization", "BlockedSites"]
 
         if starting_last_modified := self.get_starting_timestamp(context):
             delta = datetime.now(tz=timezone.utc) - starting_last_modified
@@ -556,48 +592,6 @@ class SectionDailyPerformanceStream(OutbrainStream):
         row.update(row.pop("metrics"))
 
         del row["totalResults"]
-
-        return row
-
-
-class CampaignBlockedSectionsStream(OutbrainStream):
-    """Define campaign-level blocked sections stream."""
-
-    parent_stream_type = CampaignStream
-    name = "campaign_blocked_sections"
-    path = "/campaigns/{campaignId}"
-    records_jsonpath = "$.blockedSites.blockedSections[*]"
-    primary_keys = ("campaignId", "id")
-    ignore_parent_replication_key = True
-    state_partitioning_keys = ()
-
-    schema = th.PropertiesList(
-        th.Property("campaignId", th.StringType),
-        th.Property("id", th.StringType),
-        th.Property("name", th.StringType),
-        th.Property(
-            "publisher",
-            th.ObjectType(
-                th.Property("id", th.StringType),
-                th.Property("name", th.StringType),
-            ),
-        ),
-        th.Property("creationTime", th.DateTimeType),
-        th.Property("modifiedBy", th.StringType),
-        th.Property("expiration", th.DateTimeType),
-    ).to_dict()
-
-    @override
-    def get_url_params(self, context, next_page_token):
-        params = super().get_url_params(context, next_page_token)
-        params["extraFields"] = "BlockedSites"
-
-        return params
-
-    @override
-    def post_process(self, row, context=None):
-        row = super().post_process(row, context)
-        row["campaignId"] = context["campaignId"]
 
         return row
 
