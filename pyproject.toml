@@ -21,7 +21,7 @@ requires-python = ">=3.10"
 dependencies = [
     "singer-sdk~=0.54.6",
     "requests~=2.34.2",
-    "platformdirs>=4.11.14",
+    "platformdirs>=4.12.2",
 ]
 
 [project.optional-dependencies]
